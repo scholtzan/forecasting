@@ -15,20 +15,20 @@ import logging
 
 
 DEFAULT_BQ_PROJECT = "moz-fx-data-shared-prod"
-DEFAULT_BQ_DATASET = "telemetry_derived"
-DEFAULT_BQ_TABLE = "deviations_anomdtct_v1"
+DEFAULT_BQ_DATASET = "analysis"
+DEFAULT_BQ_TABLE = "deviations_anomdtct_melbourne_v1"
 
 DEFAULT_BQ_MODEL_CACHE_PROJECT = "moz-fx-data-shared-prod"
-DEFAULT_BQ_MODEL_CACHE_DATASET = "telemetry_derived"
-DEFAULT_BQ_MODEL_CACHE_TABLE = "deviations_model_cache_v1"
+DEFAULT_BQ_MODEL_CACHE_DATASET = "analysis"
+DEFAULT_BQ_MODEL_CACHE_TABLE = "melbourne_deviations_model_cache_v1"
 
 METRICS = {
     "light_funnel_dau_city": "desktop_dau",
-    "light_funnel_dau_country": "desktop_dau",
+    # "light_funnel_dau_country": "desktop_dau",
     "light_funnel_mean_active_hours_per_profile_city":
         "mean_active_hours_per_client",
-    "light_funnel_mean_active_hours_per_profile_country":
-        "mean_active_hours_per_client",
+    # "light_funnel_mean_active_hours_per_profile_country":
+    #     "mean_active_hours_per_client",
 }
 
 
@@ -47,6 +47,7 @@ def fit_models(
     bq_client.delete_table(table, not_found_ok=True)
 
     for metric in METRICS.keys():
+        print(metric)
         raw_data = get_raw_data(
             bq_client,
             bq_storage_client,
@@ -54,16 +55,19 @@ def fit_models(
             training_start_date,
             training_end_date
         )
+        print("clean")
         clean_training_data = prepare_training_data(
             raw_data, s2d(training_start_date), s2d(training_end_date)
         )
 
         records = []
 
+        print(clean_training_data.keys())
         for c in clean_training_data.keys():
             if (len(clean_training_data[c]) < 600):
                 continue
 
+            print (c)
             pickled_model = fit_model(clean_training_data, c)
 
             record = {

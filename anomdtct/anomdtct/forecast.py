@@ -119,6 +119,7 @@ def forecast(data, bq_client, model_cache_table, metric, model_date):
         )
 
         print("Done with {}".format(c))
+        print(forecast)
 
     return forecast
 

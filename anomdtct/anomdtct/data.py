@@ -12,183 +12,62 @@ import pickle
 # the top 1000 cities according to DAU on an arbitrary day.
 QUERIES = {
     "light_funnel_dau_city": '''
-        WITH top_cities_t AS (
-          SELECT
-            COUNT(client_id) AS dau,
-            CONCAT(
-              country, ":",
-              geo_subdivision1, ":",
-              geo_subdivision2, ":",
-              city
-            ) AS geo
-          FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-          WHERE
-            submission_date = "2020-03-01"
-            AND city != "??"
-          GROUP BY
-            country,
-            geo_subdivision1,
-            geo_subdivision2,
-            city
-          ORDER BY dau DESC
-          LIMIT 1000
-        ),
-        geo_t AS (
-          SELECT
-            client_id,
-            geo
-          FROM (
-            SELECT
-              client_id,
-              CONCAT(
-                country, ":",
-                geo_subdivision1, ":",
-                geo_subdivision2, ":",
-                cd_t.city
-              ) AS geo
-            FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen` AS cd_t
-            INNER JOIN (SELECT geo FROM top_cities_t) AS top_cities_t
-            ON CONCAT(
-                country, ":",
-                geo_subdivision1, ":",
-                geo_subdivision2, ":",
-                city
-              ) = top_cities_t.geo
-          )
-        )
-        SELECT
-          submission_date AS date,
-          COUNT(client_id) AS value,
-          COUNT(client_id) AS dau,
-          geo_t.geo AS geo
-        FROM (
-            SELECT
-              client_id,
-              submission_date,
-            FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-            WHERE
-              submission_date BETWEEN '{start_date}' AND '{end_date}'
-              AND attribution.content IS NOT NULL
-          )
-        INNER JOIN geo_t
-        USING(client_id)
-        GROUP BY geo, submission_date
+        SELECT * FROM `moz-fx-data-shared-prod.analysis.light_funnel_dau_city_melbourne_data` where date BETWEEN '{start_date}' AND '{end_date}'
         ''',
-    "light_funnel_dau_country": '''
-        WITH geo_t AS (
-          SELECT
-            client_id,
-            country AS geo
-          FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen`
-        )
-        SELECT
-          submission_date AS date,
-          COUNT(client_id) AS value,
-          COUNT(client_id) AS dau,
-          geo_t.geo AS geo
-        FROM (
-            SELECT
-              client_id,
-              submission_date,
-            FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-            WHERE
-              submission_date BETWEEN '{start_date}' AND '{end_date}'
-              AND attribution.content IS NOT NULL
-          )
-        INNER JOIN geo_t
-        USING(client_id)
-        GROUP BY geo, submission_date
-        ''',
+    # "light_funnel_dau_country": '''
+    #     WITH geo_t AS (
+    #       SELECT
+    #         client_id,
+    #         country AS geo
+    #       FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen`
+    #     )
+    #     SELECT
+    #       submission_date AS date,
+    #       COUNT(client_id) AS value,
+    #       COUNT(client_id) AS dau,
+    #       geo_t.geo AS geo
+    #     FROM (
+    #         SELECT
+    #           client_id,
+    #           submission_date,
+    #         FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+    #         WHERE
+    #           submission_date BETWEEN '{start_date}' AND '{end_date}'
+    #           AND attribution.content IS NOT NULL
+    #       )
+    #     INNER JOIN geo_t
+    #     USING(client_id)
+    #     GROUP BY geo, submission_date
+    #     ''',
     "light_funnel_mean_active_hours_per_profile_city": '''
-        WITH top_cities_t AS (
-          SELECT
-            COUNT(client_id) AS dau,
-            CONCAT(
-              country, ":",
-              geo_subdivision1, ":",
-              geo_subdivision2, ":",
-              city
-            ) AS geo
-          FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-          WHERE
-            submission_date = "2020-03-01"
-            AND city != "??"
-          GROUP BY
-            country,
-            geo_subdivision1,
-            geo_subdivision2,
-            city
-          ORDER BY dau DESC
-          LIMIT 1000
-        ),
-        geo_t AS (
-          SELECT
-            client_id,
-            geo
-          FROM (
-            SELECT
-              client_id,
-              CONCAT(
-                country, ":",
-                geo_subdivision1, ":",
-                geo_subdivision2, ":",
-                cd_t.city
-              ) AS geo
-            FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen` AS cd_t
-            INNER JOIN (SELECT geo FROM top_cities_t) AS top_cities_t
-            ON CONCAT(
-                country, ":",
-                geo_subdivision1, ":",
-                geo_subdivision2, ":",
-                city
-              ) = top_cities_t.geo
-          )
-        )
-        SELECT
-          submission_date AS date,
-          AVG(active_hours_sum) AS value,
-          COUNT(client_id) AS dau,
-          geo_t.geo AS geo
-        FROM (
-            SELECT
-              active_hours_sum,
-              client_id,
-              submission_date,
-            FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-            WHERE
-              submission_date BETWEEN '{start_date}' AND '{end_date}'
-              AND attribution.content IS NOT NULL
-          )
-        INNER JOIN geo_t
-        USING(client_id)
-        GROUP BY geo, submission_date
+        SELECT * FROM `moz-fx-data-shared-prod.analysis.light_funnel_mean_active_hours_per_profile_city_melbourne_data` where date BETWEEN '{start_date}' AND '{end_date}'
         ''',
-    "light_funnel_mean_active_hours_per_profile_country": '''
-        WITH geo_t AS (
-          SELECT
-            client_id,
-            country AS geo
-          FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen`
-        )
-        SELECT
-          submission_date AS date,
-          AVG(active_hours_sum) AS value,
-          COUNT(client_id) AS dau,
-          geo_t.geo AS geo
-        FROM (
-            SELECT
-              active_hours_sum,
-              client_id,
-              submission_date,
-            FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
-            WHERE
-              submission_date BETWEEN '{start_date}' AND '{end_date}'
-              AND attribution.content IS NOT NULL
-          )
-        INNER JOIN geo_t
-        USING(client_id)
-        GROUP BY geo, submission_date
-        '''
+    # "light_funnel_mean_active_hours_per_profile_country": '''
+    #     WITH geo_t AS (
+    #       SELECT
+    #         client_id,
+    #         country AS geo
+    #       FROM `moz-fx-data-shared-prod.telemetry.clients_first_seen`
+    #     )
+    #     SELECT
+    #       submission_date AS date,
+    #       AVG(active_hours_sum) AS value,
+    #       COUNT(client_id) AS dau,
+    #       geo_t.geo AS geo
+    #     FROM (
+    #         SELECT
+    #           active_hours_sum,
+    #           client_id,
+    #           submission_date,
+    #         FROM `moz-fx-data-shared-prod.telemetry.clients_daily`
+    #         WHERE
+    #           submission_date BETWEEN '{start_date}' AND '{end_date}'
+    #           AND attribution.content IS NOT NULL
+    #       )
+    #     INNER JOIN geo_t
+    #     USING(client_id)
+    #     GROUP BY geo, submission_date
+        # '''
 }
 
 
@@ -203,11 +82,14 @@ def prepare_training_data(data, training_start, training_end):
     clean_training_data = {}
     # Suppress any geoXdate with less than 5000 profiles as per minimum
     # aggregation standards for the policy this data will be released under.
-    data = data[data.dau >= 5000].drop(columns=["dau"])
+    # data = data[data.dau >= 5000].drop(columns=["dau"])
     for c in data.geo.unique():
+        print(c)
+        print(len(data.query("geo==@c")))
         # We don't want to include a region unless we have at least about
         # two years of training data for the model
         if (len(data.query("geo==@c")) < 600):
+            print("dddd")
             continue
         clean_data[c] = data.query("geo==@c").rename(
             columns={"date": "ds", "value": "y"}
